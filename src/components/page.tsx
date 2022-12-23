@@ -1,57 +1,44 @@
 import { useState, useEffect } from "react";
-import ProblemForm from "./Forms/problemForm";
-import ProblemTable from "./Tables/problemTable";
+import PageForm from "./Forms/pageForm";
+import PageTable from "./Tables/pageTable";
 import { Tabs } from "antd";
 import { PlusOutlined } from "@ant-design/icons";
 import { api } from "../api";
 
-export interface CategoryTypes {
-  Id: number;
-  Name: string;
-}
+
 export interface TagsTypes {
   Id: number;
   Name: string;
 }
-export interface CompaniesTypes {
+export interface PageTypes {
   Id: number;
-  Name: string;
-}
-export interface TestCasesTypes {
-  Id: number;
-  Value: string;
-}
-export interface ProblemTypes {
-  Id: number;
-  Name: string;
-  CategoryId: number;
-  Category: CategoryTypes;
-  Difficulty: string;
-  Tags: TagsTypes[];
-  Companies: CompaniesTypes[];
-  DescriptionPage: {
+  Title: string;
+  CoverImage: string;
+  BTags: TagsTypes[];
+  Status: string;
+  TextPage: {
     Id: number;
     Text: object;
   };
-  TestCases: TestCasesTypes[];
+  createdAt: string
 }
 
-export default function Problem() {
+export default function Page() {
   const [formDrawer, setFormDrawer] = useState<{
-    editData: ProblemTypes | null;
+    editData: PageTypes | null;
     visible: boolean;
   }>({ editData: null, visible: false });
-  const [problems, setProblems] = useState<{
+  const [pages, setPages] = useState<{
     loading: boolean;
-    data: ProblemTypes[];
+    data: PageTypes[];
   }>({ loading: false, data: [] });
 
   const fetchTableData = async () => {
-    setProblems({ ...problems, loading: true });
+    setPages({ ...pages, loading: true });
     api
-      .get("/problem/get")
+      .get("/blog/get")
       .then((res) => {
-        setProblems({ loading: false, data: res.data.data });
+        setPages({ loading: false, data: res.data.data });
       })
       .catch((err) => {
         console.log(err);
@@ -63,7 +50,7 @@ export default function Problem() {
   return (
     <div className="p-2 h-full">
       {formDrawer.visible ? (
-        <ProblemForm
+        <PageForm
           editData={formDrawer.editData}
           fetchTableData={fetchTableData}
           hideFormDrawer={() => {
@@ -72,8 +59,8 @@ export default function Problem() {
         />
       ) : (
         <div className="flex h-full">
-          <div className="overflow-x-auto relative shadow-md sm:rounded-lg p-2 bg-white grow mr-3">
-            <div className="flex justify-between items-center m-2">
+          <div className="overflow-x-auto relative shadow-md sm:rounded-lg p-2 bg-white grow mr-3 overflow-hidden flex flex-col">
+            <div className="flex justify-between items-center m-2 overflow-hidden">
               <div className="dark:bg-gray-900">
                 <label className="sr-only">Search</label>
                 <div className="relative mt-1">
@@ -110,16 +97,16 @@ export default function Problem() {
               </button>
             </div>
 
-            <ProblemTable problems={problems} setFormDrawer={setFormDrawer} />
+            <PageTable pages={pages} setFormDrawer={setFormDrawer} /> 
           </div>
           <div className="rounded-lg p-2 bg-white w-2/6">
             <div className="text-sm font-medium text-center text-gray-500 border-b border-gray-200 dark:text-gray-400 dark:border-gray-700">
-              <Tabs
+            <Tabs
                 defaultActiveKey="1"
               
                 items={[
                   {
-                    label: `Comments`,
+                    label: `Blog Comments`,
                     key: "1",
                     children: `Comments`,
                   },

@@ -1,5 +1,6 @@
 import "../styles/globals.css";
 import "antd/dist/reset.css";
+import "../styles/github-markdown.css"
 import { AuthProvider, getUser, AuthTypes } from "../context/authProvider";
 import NotificationProvider from "../context/notificationProvider";
 import Layout from "../components/layout";
