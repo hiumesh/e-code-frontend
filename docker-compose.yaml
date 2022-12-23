@@ -1,0 +1,24 @@
+version: '3.8'
+
+services:
+  server:
+    build:
+      context: .
+      dockerfile: dockerfiles/server.Dockerfile
+    volumes:
+      - ./:/home/node/app
+    ports:
+      - "3000:3000"
+    network_mode: host
+  npm:
+    build:
+      context: .
+      dockerfile: dockerfiles/npm.Dockerfile
+    volumes:
+      - ./:/home/node/app
+  npx:
+    build:
+      context: .
+      dockerfile: dockerfiles/npx.Dockerfile
+    volumes:
+      - ./src:/home/node/app
