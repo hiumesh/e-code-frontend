@@ -82,7 +82,7 @@ export default function Problem() {
         </div>
       </div>
       <Drawer
-        title="Create a new account"
+        title="Create a new Problem"
         width={720}
         onClose={() => setFormDrawer(false)}
         open={formDrawer}

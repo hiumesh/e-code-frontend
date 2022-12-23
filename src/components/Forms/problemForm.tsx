@@ -1,63 +1,128 @@
-import { Form, Input, Select, Button, Radio, Upload, Tabs, Modal } from "antd";
-import { useState } from "react";
+import { Form, Input, Select, Button, Radio, Upload, Tabs } from "antd";
+import { useState, useEffect, ReactNode, useContext } from "react";
+import { NotificationContext } from "../../context/notificationProvider";
 import Quill from "../quill";
 import { InboxOutlined, PlusOutlined } from "@ant-design/icons";
+import { api } from "../../api";
+import { Delta } from "types-quill-delta";
+import axios from "axios";
 
 interface FormData {
   SolutionMethod: "MANUALLY" | "FILE" | null;
   TestCaseMethod: "MANUALLY" | "FILE" | null;
 }
 
-interface TestCase {
-  key: number;
-  name: string;
-  value: string;
+interface TabTypes {
+  key: string;
+  label: string;
+  children: ReactNode;
 }
-const initialTestCaseItems = [
-  { key: 1, name: "Test Case 1", value: "" },
-  { key: 2, name: "Test Case 2", value: "" },
-  { key: 3, name: "Test Case 3", value: "" },
+const difficultyItems = [
+  { name: "Hard", value: "HARD" },
+  { name: "Medium", value: "MEDIUM" },
+  { name: "Easy", value: "EASY" },
 ];
 
 export default function ProblemForm() {
   const [form] = Form.useForm();
+  const openNotificationWithIcon = useContext(NotificationContext);
+  const [tags, setTags] = useState({ loading: false, data: [] });
+  const [languages, setLanguages] = useState({ loading: false, data: [] });
+  const [compaines, setCompaines] = useState({ loading: false, data: [] });
+  const [category, setCategory] = useState({ loading: false, data: [] });
+  const [quillDataState, setQuillDataState] = useState<Delta | null>(null)
+  const [loading, setLoading] = useState(false);
   const [solutionUploadMode, setSolutionUploadMode] = useState<string | null>(
     null
   );
   const [testCaseUploadMode, setTestCaseUploadMode] = useState<string | null>(
     null
   );
-  const [testCases, setTestCases] = useState<TestCase[]>(initialTestCaseItems);
-  const [discriptionModal, setDiscriptionModal] = useState(false);
-  const onFinish = (data:any) => {
-    console.log(data);
-    // TODO
+  const [showDiscriptionModal, setShowDiscriptionModal] = useState(false);
+
+  const onFinish = (data: any) => {
+    if (
+      data["TestCaseMethod"] === "MANUALLY" &&
+      (data["ManuallyTestCases"] === undefined ||
+        data["ManuallyTestCases"].length < 3)
+    ) {
+      openNotificationWithIcon(
+        "error",
+        "Minimum Three Test Cases are Required"
+      );
+    } else {
+      setLoading(true);
+      api
+        .post("problem/create", data)
+        .then((res) => {
+          setLoading(false);
+          openNotificationWithIcon("success", "Problem Created Successfully");
+        })
+        .catch((err) => {
+          setLoading(false);
+          openNotificationWithIcon("error", err?.message);
+        })
+    } 
   };
   const onValuesChange = ({ SolutionMethod, TestCaseMethod }: FormData) => {
     if (SolutionMethod) setSolutionUploadMode(SolutionMethod);
     if (TestCaseMethod) setTestCaseUploadMode(TestCaseMethod);
   };
-  const onEdit = (targetKey: string, action: "add" | "remove") => {
-    if (action === "add") {
-      const newTestCases = [...testCases];
-      newTestCases.push({
-        key: new Date().getTime(),
-        name: `Test Case ${newTestCases.length + 1}`,
-        value: "",
-      });
-      setTestCases(newTestCases);
-    } else {
-      const newTestCases = testCases.filter(
-        (t) => t.key.toString() != targetKey
-      );
-      setTestCases(newTestCases);
-    }
-  };
 
   const setQuillData = (data: any) => {
     console.log(data);
-    form.setFieldValue("Discription", data);
+    form.setFieldValue("Description", data);
   };
+
+  useEffect(() => {
+    const apiPromises = [
+      api.get("/language/getAll?cid=1"),
+      api.get("/tag/getAll?cid=1"),
+      api.get("/company/getAll"),
+      api.get("/category/get")
+    ]
+
+    axios.all(apiPromises)
+      .then((res) => {
+        setLanguages({
+          data: res[0].data.data?.map((x: { Name: string; Id: number }) => ({
+            label: x.Name,
+            value: x.Id,
+          })),
+          loading: false,
+        });
+        setTags({
+          data: res[1].data.data?.map((x: { Name: string; Id: number }) => ({
+            label: x.Name,
+            value: x.Id,
+          })),
+          loading: false,
+        });
+        setCompaines({
+          data: res[2].data.data?.map((x: { Name: string; Id: number }) => ({
+            label: x.Name,
+            value: x.Id,
+          })),
+          loading: false,
+        });
+        setCategory({
+          data: res[3].data.data?.map((x: { Name: string; Id: number }) => ({
+            label: x.Name,
+            value: x.Id,
+          })),
+          loading: false,
+        });
+      })
+      .catch((err) => {
+        console.log(err)
+        setLanguages({ ...languages, loading: false });
+        setTags({ ...tags, loading: false });
+        setCompaines({ ...compaines, loading: false });
+        setCategory({ ...category, loading: false });
+      })
+
+    setQuillDataState(form.getFieldValue('Description'))
+  }, []);
   return (
     <Form
       form={form}
@@ -70,7 +135,7 @@ export default function ProblemForm() {
       <div className="flex">
         <Form.Item
           label="Title"
-          name="title"
+          name="Name"
           className="flex-1 mr-2"
           rules={[{ required: true, message: "Please input your title!" }]}
         >
@@ -88,6 +153,8 @@ export default function ProblemForm() {
             size="large"
             placeholder="Please select"
             style={{ width: "100%" }}
+            loading={tags.loading}
+            options={tags.data}
           />
         </Form.Item>
       </div>
@@ -100,26 +167,10 @@ export default function ProblemForm() {
         >
           <Select
             showSearch
-            placeholder="Select Compines"
+            placeholder="Select Difficulty"
             optionFilterProp="children"
-            filterOption={(input, option) =>
-              (option?.label ?? "").toLowerCase().includes(input.toLowerCase())
-            }
             size="large"
-            options={[
-              {
-                value: "jack",
-                label: "Jack",
-              },
-              {
-                value: "lucy",
-                label: "Lucy",
-              },
-              {
-                value: "tom",
-                label: "Tom",
-              },
-            ]}
+            options={difficultyItems}
           />
         </Form.Item>
 
@@ -134,36 +185,44 @@ export default function ProblemForm() {
             mode="tags"
             placeholder="Select Compines"
             optionFilterProp="children"
-            filterOption={(input, option) =>
-              (option?.label ?? "").toLowerCase().includes(input.toLowerCase())
-            }
             size="large"
-            options={[
-              {
-                value: "jack",
-                label: "Jack",
-              },
-              {
-                value: "lucy",
-                label: "Lucy",
-              },
-              {
-                value: "tom",
-                label: "Tom",
-              },
-            ]}
+            loading={compaines.loading}
+            options={compaines.data}
           />
         </Form.Item>
       </div>
-      <Form.Item name="Discription" label="Discription">
-        <Button
-          type="dashed"
-          onClick={() => setDiscriptionModal(true)}
-          icon={<PlusOutlined />}
+      <div className="flex">
+        <Form.Item
+          label="Category"
+          name="CategoryId"
+          className="flex-1 mr-2"
+          rules={[{ required: true }]}
         >
-          Add Description
-        </Button>
-      </Form.Item>
+          <Select
+            showSearch
+            placeholder="Select Categories"
+            optionFilterProp="children"
+            size="large"
+            loading={category.loading}
+            options={category.data}
+          />
+        </Form.Item>
+        <Form.Item
+          name="Description"
+          label="Description"
+          className="flex-1 ml-2"
+        >
+          <Button
+            type="dashed"
+            size="large"
+            className="flex items-center"
+            onClick={() => setShowDiscriptionModal(true)}
+            icon={<PlusOutlined />}
+          >
+            Add Description
+          </Button>
+        </Form.Item>
+      </div>
 
       <Form.Item
         label="Solution Language"
@@ -173,25 +232,10 @@ export default function ProblemForm() {
       >
         <Select
           showSearch
-          placeholder="Select a person"
+          placeholder="Select a Language"
           optionFilterProp="children"
-          filterOption={(input, option) =>
-            (option?.label ?? "").toLowerCase().includes(input.toLowerCase())
-          }
-          options={[
-            {
-              value: "jack",
-              label: "Jack",
-            },
-            {
-              value: "lucy",
-              label: "Lucy",
-            },
-            {
-              value: "tom",
-              label: "Tom",
-            },
-          ]}
+          loading={languages.loading}
+          options={languages.data}
         />
       </Form.Item>
       <Form.Item
@@ -207,7 +251,7 @@ export default function ProblemForm() {
       {solutionUploadMode === "MANUALLY" && (
         <Form.Item
           label="Solution"
-          name="ManuallySolution"
+          name="SolutionCode"
           rules={[{ required: true }]}
         >
           <Input.TextArea
@@ -233,7 +277,6 @@ export default function ProblemForm() {
           </Upload.Dragger>
         </Form.Item>
       )}
-
       <Form.Item
         label="Test Case Method"
         name="TestCaseMethod"
@@ -253,21 +296,30 @@ export default function ProblemForm() {
               onEdit={(key, action) => {
                 console.log(typeof key);
                 if (action === "add") add();
-                else remove(key as unknown as number);
+                else
+                  remove(
+                    typeof key === "number" ? key : parseInt(key as string)
+                  );
               }}
-              items={fields.map(({ key, ...restField }, idx) => ({
-                label: `Test Case ${idx}`,
-                key: key,
-                children: (
-                  <Form.Item {...restField} className="h-full">
-                    <Input.TextArea
-                      placeholder="Enter Code"
+              items={
+                fields.map(({ ...restField }, idx) => ({
+                  label: `Test Case ${idx}`,
+                  key: idx,
+                  children: (
+                    <Form.Item
+                      {...restField}
+                      rules={[{ required: true }]}
                       className="h-full"
-                      autoSize={{ minRows: 9, maxRows: 9 }}
-                    />
-                  </Form.Item>
-                ),
-              }))}
+                    >
+                      <Input.TextArea
+                        placeholder="Enter Code"
+                        className="h-full"
+                        autoSize={{ minRows: 9, maxRows: 9 }}
+                      />
+                    </Form.Item>
+                  ),
+                })) as unknown as TabTypes[] | undefined
+              }
             />
           )}
         </Form.List>
@@ -291,15 +343,21 @@ export default function ProblemForm() {
         </Form.Item>
       )}
       <Quill
-        discriptionModal={discriptionModal}
-        setDiscriptionModal={setDiscriptionModal}
+        quillData={quillDataState || null}
+        discriptionModal={showDiscriptionModal}
+        setDiscriptionModal={setShowDiscriptionModal}
         setQuillData={setQuillData}
       />
       <div>
         <Button type="default" htmlType="submit" className="mr-3">
           Reset
         </Button>
-        <Button className="bg-[#1677FF]" type="primary" htmlType="submit">
+        <Button
+          className="bg-[#1677FF]"
+          type="primary"
+          htmlType="submit"
+          loading={loading}
+        >
           Submit
         </Button>
       </div>

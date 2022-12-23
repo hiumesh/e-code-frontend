@@ -1,25 +1,37 @@
-import React, { Dispatch, SetStateAction } from "react";
-import {Modal} from 'antd'
+import React, { Dispatch, SetStateAction, useEffect } from "react";
+import { Modal } from "antd";
 import { useQuill } from "react-quilljs";
+import { Delta } from "types-quill-delta";
 
 import "quill/dist/quill.snow.css";
 
 interface QuillPropTypes {
-  setQuillData: (data:any) => void,
-  discriptionModal: boolean,
-  setDiscriptionModal: Dispatch<SetStateAction<boolean>>
+  quillData: Delta | null;
+  setQuillData: (data: any) => void;
+  discriptionModal: boolean;
+  setDiscriptionModal: Dispatch<SetStateAction<boolean>>;
 }
 
-export default function Quill({ setQuillData, discriptionModal, setDiscriptionModal }: QuillPropTypes) {
+export default function Quill({
+  quillData,
+  setQuillData,
+  discriptionModal,
+  setDiscriptionModal,
+}: QuillPropTypes) {
   const { quill, quillRef } = useQuill();
 
   const onClose = () => {
     setQuillData(quill?.getContents());
-    setDiscriptionModal(false)
-  }
+    setDiscriptionModal(false);
+  };
+
+  useEffect(() => {
+    quill?.setContents(quillData as Delta);
+  }, []);
+
   return (
     <Modal
-      title="Discription"
+      title="Description"
       open={discriptionModal}
       onOk={onClose}
       okButtonProps={{
@@ -28,8 +40,10 @@ export default function Quill({ setQuillData, discriptionModal, setDiscriptionMo
       onCancel={onClose}
       width={900}
     >
-      <div style={{ width: 852, height: 700 }} className="mx-auto mb-14">
-        <div ref={quillRef} />
+      <div>
+        <div style={{ width: 852, height: 700 }} className="mx-auto mb-14">
+          <div ref={quillRef} />
+        </div>
       </div>
     </Modal>
   );
