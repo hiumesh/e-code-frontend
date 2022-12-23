@@ -5,6 +5,7 @@ import Quill from "../quill";
 import { InboxOutlined, PlusOutlined } from "@ant-design/icons";
 import { api } from "../../api";
 import { Delta } from "types-quill-delta";
+import { ProblemTypes } from "../problem";
 import axios from "axios";
 
 interface FormData {
@@ -23,14 +24,33 @@ const difficultyItems = [
   { name: "Easy", value: "EASY" },
 ];
 
-export default function ProblemForm() {
+interface ProblemFormPropTypes {
+  editData: ProblemTypes | null;
+  fetchTableData: () => {};
+  hideFormDrawer: () => void
+}
+
+export default function ProblemForm({
+  editData,
+  fetchTableData,
+  hideFormDrawer,
+}: ProblemFormPropTypes) {
   const [form] = Form.useForm();
   const openNotificationWithIcon = useContext(NotificationContext);
-  const [tags, setTags] = useState({ loading: false, data: [] });
-  const [languages, setLanguages] = useState({ loading: false, data: [] });
+  const [tags, setTags] = useState<{
+    loading: boolean;
+    data: [];
+    CategoryId: null | number;
+  }>({ loading: false, data: [], CategoryId: null });
+  const [languages, setLanguages] = useState<{
+    loading: boolean;
+    data: [];
+    CategoryId: null | number;
+  }>({ loading: false, data: [], CategoryId: null });
   const [compaines, setCompaines] = useState({ loading: false, data: [] });
   const [category, setCategory] = useState({ loading: false, data: [] });
-  const [quillDataState, setQuillDataState] = useState<Delta | null>(null)
+  const [quillDataState, setQuillDataState] = useState<Delta | null>(null);
+  const [tabsActiveKey, setTabsActiveKey] = useState(0)
   const [loading, setLoading] = useState(false);
   const [solutionUploadMode, setSolutionUploadMode] = useState<string | null>(
     null
@@ -52,17 +72,34 @@ export default function ProblemForm() {
       );
     } else {
       setLoading(true);
-      api
+      if (editData) {
+        api.post('problem/update', { Id: editData.Id, ...data })
+          .then(() => {
+            setLoading(false);
+            openNotificationWithIcon("success", "Problem Updated Successfully");
+            fetchTableData();
+            hideFormDrawer()
+          })
+          .catch((err) => {
+            setLoading(false);
+            openNotificationWithIcon("error", err?.message);
+          })
+      } else {
+        api
         .post("problem/create", data)
         .then((res) => {
           setLoading(false);
           openNotificationWithIcon("success", "Problem Created Successfully");
+          fetchTableData();
+          hideFormDrawer()
         })
         .catch((err) => {
           setLoading(false);
           openNotificationWithIcon("error", err?.message);
-        })
-    } 
+        });
+      }
+      
+    }
   };
   const onValuesChange = ({ SolutionMethod, TestCaseMethod }: FormData) => {
     if (SolutionMethod) setSolutionUploadMode(SolutionMethod);
@@ -75,38 +112,20 @@ export default function ProblemForm() {
   };
 
   useEffect(() => {
-    const apiPromises = [
-      api.get("/language/getAll?cid=1"),
-      api.get("/tag/getAll?cid=1"),
-      api.get("/company/getAll"),
-      api.get("/category/get")
-    ]
+    const apiPromises = [api.get("/company/getAll"), api.get("/category/get")];
 
-    axios.all(apiPromises)
+    axios
+      .all(apiPromises)
       .then((res) => {
-        setLanguages({
+        setCompaines({
           data: res[0].data.data?.map((x: { Name: string; Id: number }) => ({
             label: x.Name,
             value: x.Id,
           })),
           loading: false,
         });
-        setTags({
-          data: res[1].data.data?.map((x: { Name: string; Id: number }) => ({
-            label: x.Name,
-            value: x.Id,
-          })),
-          loading: false,
-        });
-        setCompaines({
-          data: res[2].data.data?.map((x: { Name: string; Id: number }) => ({
-            label: x.Name,
-            value: x.Id,
-          })),
-          loading: false,
-        });
         setCategory({
-          data: res[3].data.data?.map((x: { Name: string; Id: number }) => ({
+          data: res[1].data.data?.map((x: { Name: string; Id: number }) => ({
             label: x.Name,
             value: x.Id,
           })),
@@ -114,15 +133,81 @@ export default function ProblemForm() {
         });
       })
       .catch((err) => {
-        console.log(err)
-        setLanguages({ ...languages, loading: false });
-        setTags({ ...tags, loading: false });
+        console.log(err);
         setCompaines({ ...compaines, loading: false });
         setCategory({ ...category, loading: false });
-      })
+      });
 
-    setQuillDataState(form.getFieldValue('Description'))
+    setQuillDataState(form.getFieldValue("Description"));
   }, []);
+
+  const fetchCategoryLanguages = async (Id: number) => {
+    if (languages.CategoryId !== Id) {
+      setLanguages({ ...languages, loading: true });
+      api
+        .get(`/language/getAll?cid=${Id}`)
+        .then((res) => {
+          setLanguages({
+            data: res.data.data?.map((x: { Name: string; Id: number }) => ({
+              label: x.Name,
+              value: x.Id,
+            })),
+            loading: false,
+            CategoryId: Id,
+          });
+        })
+        .catch((err) => {
+          console.log(err);
+          setLanguages({ ...languages, loading: false });
+        });
+    }
+  };
+  const fetchCategoryTags = async (Id: number) => {
+    if (tags.CategoryId !== Id) {
+      setTags({ ...tags, loading: true });
+      api
+        .get(`/tag/getAll?cid=${Id}`)
+        .then((res) => {
+          setTags({
+            data: res.data.data?.map((x: { Name: string; Id: number }) => ({
+              label: x.Name,
+              value: x.Id,
+            })),
+            loading: false,
+            CategoryId: Id,
+          });
+        })
+        .catch((err) => {
+          console.log(err);
+          setTags({ ...tags, loading: false });
+        });
+    }
+  };
+
+  const fillForm = () => {
+    if (editData) {
+      form.setFieldsValue({
+        ...editData,
+        tags: editData.Tags.map((t) => t.Id),
+        Compaines: editData.Companies.map((c) => c.Id),
+        SolutionMethod: "MANUALLY",
+        TestCaseMethod: "MANUALLY",
+        ManuallyTestCases: editData.TestCases.map((t) => t.Value),
+      });
+      setQuillDataState(editData.JSONDescription.Text as Delta);
+      setSolutionUploadMode("MANUALLY");
+      setTestCaseUploadMode("MANUALLY");
+      fetchCategoryLanguages(editData.CategoryId);
+      fetchCategoryTags(editData.CategoryId);
+    } else {
+      form.resetFields();
+      setQuillDataState(null);
+    }
+    setTabsActiveKey(0)
+  }
+  useEffect(() => {
+    fillForm()
+  }, [editData]);
   return (
     <Form
       form={form}
@@ -201,6 +286,11 @@ export default function ProblemForm() {
           <Select
             showSearch
             placeholder="Select Categories"
+            onChange={(value) => {
+              console.log(value);
+              fetchCategoryLanguages(value);
+              fetchCategoryTags(value);
+            }}
             optionFilterProp="children"
             size="large"
             loading={category.loading}
@@ -293,9 +383,13 @@ export default function ProblemForm() {
           {(fields, { add, remove }) => (
             <Tabs
               type="editable-card"
+              activeKey={tabsActiveKey as unknown as string}
+              onChange={(activeKey) => setTabsActiveKey(activeKey as unknown as number)}
               onEdit={(key, action) => {
-                console.log(typeof key);
-                if (action === "add") add();
+                if (action === "add") {
+                  add()
+                  setTabsActiveKey(fields.length)
+                }
                 else
                   remove(
                     typeof key === "number" ? key : parseInt(key as string)
@@ -349,7 +443,14 @@ export default function ProblemForm() {
         setQuillData={setQuillData}
       />
       <div>
-        <Button type="default" htmlType="submit" className="mr-3">
+        <Button
+          type="default"
+          htmlType="button"
+          className="mr-3"
+          onClick={() => {
+            fillForm()
+          }}
+        >
           Reset
         </Button>
         <Button
@@ -358,7 +459,7 @@ export default function ProblemForm() {
           htmlType="submit"
           loading={loading}
         >
-          Submit
+          {editData ? "Update" : "Submit"}
         </Button>
       </div>
     </Form>

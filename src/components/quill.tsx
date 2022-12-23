@@ -27,8 +27,8 @@ export default function Quill({
 
   useEffect(() => {
     quill?.setContents(quillData as Delta);
-  }, []);
-
+  });
+  
   return (
     <Modal
       title="Description"

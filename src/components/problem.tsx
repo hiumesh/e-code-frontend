@@ -1,12 +1,65 @@
-import { Drawer, Button, Switch } from "antd";
-import { useState } from "react";
+import { Drawer } from "antd";
+import { useState, useEffect } from "react";
 import ProblemForm from "./Forms/problemForm";
 import ProblemTable from "./Tables/problemTable";
-import { HiPlus } from 'react-icons/hi'
+import { PlusOutlined } from "@ant-design/icons";
+import { api } from "../api";
+
+export interface CategoryTypes {
+  Id: number;
+  Name: string;
+}
+export interface TagsTypes {
+  Id: number;
+  Name: string;
+}
+export interface CompaniesTypes {
+  Id: number;
+  Name: string;
+}
+export interface TestCasesTypes {
+  Id: number;
+  Value: string;
+}
+export interface ProblemTypes {
+  Id: number;
+  Name: string;
+  CategoryId: number;
+  Category: CategoryTypes;
+  Difficulty: string;
+  Tags: TagsTypes[];
+  Companies: CompaniesTypes[];
+  JSONDescription: {
+    Id: number;
+    Text: object;
+  };
+  TestCases: TestCasesTypes[];
+}
 
 export default function Problem() {
-  const [formDrawer, setFormDrawer] = useState(false);
+  const [formDrawer, setFormDrawer] = useState<{
+    editData: ProblemTypes | null;
+    visible: boolean;
+  }>({ editData: null, visible: false });
+  const [problems, setProblems] = useState<{
+    loading: boolean;
+    data: ProblemTypes[];
+  }>({ loading: false, data: [] });
 
+  const fetchTableData = async () => {
+    setProblems({ ...problems, loading: true });
+    api
+      .get("/problem/get")
+      .then((res) => {
+        setProblems({ loading: false, data: res.data.data });
+      })
+      .catch((err) => {
+        console.log(err);
+      });
+  };
+  useEffect(() => {
+    fetchTableData();
+  }, []);
   return (
     <div className="p-2 flex h-full">
       <div className="overflow-x-auto relative shadow-md sm:rounded-lg p-2 bg-white grow mr-3">
@@ -37,18 +90,17 @@ export default function Problem() {
               />
             </div>
           </div>
-          <Button
-            className="bg-[#1677FF] flex items-center"
-            type="primary"
-            size="middle"
-            onClick={() => setFormDrawer(true)}
-            icon={<HiPlus className="mr-2 text-lg" />}
+          <button
+            type="button"
+            onClick={() => setFormDrawer({ editData: null, visible: true })}
+            className="rounded bg-blue-500 hover:bg-blue-700 py-2 px-4 text-white flex items-center"
           >
+            <PlusOutlined className="mr-1" />
             Create
-          </Button>
+          </button>
         </div>
 
-        <ProblemTable />
+        <ProblemTable problems={problems} setFormDrawer={setFormDrawer} />
       </div>
       <div className="rounded-lg p-2 bg-white w-2/6">
         <div className="text-sm font-medium text-center text-gray-500 border-b border-gray-200 dark:text-gray-400 dark:border-gray-700">
@@ -84,11 +136,15 @@ export default function Problem() {
       <Drawer
         title="Create a new Problem"
         width={720}
-        onClose={() => setFormDrawer(false)}
-        open={formDrawer}
+        onClose={() => setFormDrawer({ ...formDrawer, visible: false })}
+        open={formDrawer.visible}
         bodyStyle={{ paddingBottom: 80 }}
       >
-        <ProblemForm />
+        <ProblemForm
+          editData={formDrawer.editData}
+          fetchTableData={fetchTableData}
+          hideFormDrawer={() => {setFormDrawer({ ...formDrawer, visible: false })}}
+        />
       </Drawer>
     </div>
   );

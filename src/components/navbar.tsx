@@ -1,4 +1,4 @@
-import { useContext } from "react";
+import { useContext, useState, useEffect } from "react";
 import { Avatar, MenuProps, Dropdown } from "antd";
 import Image from "next/image";
 import { useRouter } from "next/router"
@@ -9,6 +9,13 @@ import { AuthContext } from "../context/authProvider";
 export default function Navbar() {
   const authContext = useContext(AuthContext);
   const router = useRouter()
+  const [isLoggedIn, setIsLoggedIn] = useState(false)
+
+
+  useEffect(() => {
+    if (authContext?.auth.user?.Email) setIsLoggedIn(true)
+  }, [])
+  
 
   const items: MenuProps["items"] = [
     {
@@ -53,7 +60,7 @@ export default function Navbar() {
           </span>
         </a>
         <div className="flex justify-center items-center md:order-2">
-          {authContext?.auth.user?.Email ? (
+          {isLoggedIn ? (
             <Dropdown menu={{ items }}>
               <Avatar className="text-[#f56a00] bg-[#fde3cf] mx-2">U</Avatar>
             </Dropdown>

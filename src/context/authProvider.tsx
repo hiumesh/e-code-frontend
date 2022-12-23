@@ -74,7 +74,6 @@ export const getUser = async (context: any) => {
         }
       })
       .catch((error) => {
-        console.log(error)
         return { status: "SIGNED_OUT", user: null };
       });
   }
