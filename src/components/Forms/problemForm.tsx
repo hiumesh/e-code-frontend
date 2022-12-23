@@ -50,10 +50,6 @@ export default function ProblemForm({
   const [compaines, setCompaines] = useState({ loading: false, data: [] });
   const [category, setCategory] = useState({ loading: false, data: [] });
   const [viewMode, setViewMode] = useState("edit");
-  const [previewHTML, setPreviewHTML] = useState<{
-    loading: boolean;
-    html: string | null;
-  }>({ loading: false, html: null });
   const [tabsActiveKey, setTabsActiveKey] = useState(0);
   const [loading, setLoading] = useState(false);
   const [solutionUploadMode, setSolutionUploadMode] = useState<string | null>(
@@ -137,21 +133,6 @@ export default function ProblemForm({
       });
   }, []);
 
-  const fetchPreviewHTML = async () => {
-    if (typeof form.getFieldValue("Description") === "string") {
-      setPreviewHTML({ ...previewHTML, loading: true });
-      axios
-        .post("https://api.github.com/markdown", { 'mode': 'markdown', 'text': form.getFieldValue("Description") })
-        .then((res) => {
-          console.log(res);
-          setPreviewHTML({ loading: false, html: res.data });
-        })
-        .catch((err) => {
-          console.log(err);
-          setPreviewHTML({ ...previewHTML, loading: false });
-        });
-    }
-  };
   const fetchCategoryLanguages = async (Id: number) => {
     if (languages.CategoryId !== Id) {
       setLanguages({ ...languages, loading: true });
@@ -256,7 +237,6 @@ export default function ProblemForm({
               className={`${viewMode === "preview" ? "bg-[#1677FF]" : ""} mx-1`}
               onClick={() => {
                 if (viewMode !== "preview") {
-                  fetchPreviewHTML();
                   setViewMode("preview");
                 }
               }}
@@ -266,7 +246,7 @@ export default function ProblemForm({
           </div>
         </div>
         {viewMode === "preview" ? (
-          <MarkdownPreview text={previewHTML.html} />
+          <MarkdownPreview text={form.getFieldValue('Description')} />
         ) : (
           <Form
             form={form}

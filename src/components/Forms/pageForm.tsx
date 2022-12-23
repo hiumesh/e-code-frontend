@@ -5,7 +5,6 @@ import { api, hostURl } from "../../api";
 import { PageTypes } from "../page";
 import Markdown from "../MarkdownEditor";
 import MarkdownPreview from "../MarkdownPreview";
-import axios from "axios";
 
 interface FormData {
   SolutionMethod: "MANUALLY" | "FILE" | null;
@@ -35,10 +34,6 @@ export default function PageForm({
     fileName: string | null,
   }>({ loading: false, src: null, fileName: null });
   const [viewMode, setViewMode] = useState("edit");
-  const [previewHTML, setPreviewHTML] = useState<{
-    loading: boolean;
-    html: string | null;
-  }>({ loading: false, html: null });
   const [loading, setLoading] = useState(false);
 
   const onFinish = (data: any) => {
@@ -72,24 +67,6 @@ export default function PageForm({
     }
   };
 
-  const fetchPreviewHTML = async () => {
-    if (typeof form.getFieldValue("Text") === "string") {
-      setPreviewHTML({ ...previewHTML, loading: true });
-      axios
-        .post("https://api.github.com/markdown", {
-          mode: "markdown",
-          text: form.getFieldValue("Text"),
-        })
-        .then((res) => {
-          console.log(res);
-          setPreviewHTML({ loading: false, html: res.data });
-        })
-        .catch((err) => {
-          console.log(err);
-          setPreviewHTML({ ...previewHTML, loading: false });
-        });
-    }
-  };
   const fetchPageTags = async (Id: number) => {
     setTags({ ...tags, loading: true });
     api
@@ -188,7 +165,6 @@ export default function PageForm({
               className={`${viewMode === "preview" ? "bg-[#1677FF]" : ""} mx-1`}
               onClick={() => {
                 if (viewMode !== "preview") {
-                  fetchPreviewHTML();
                   setViewMode("preview");
                 }
               }}
@@ -198,7 +174,7 @@ export default function PageForm({
           </div>
         </div>
         {viewMode === "preview" ? (
-          <MarkdownPreview text={previewHTML.html} />
+          <MarkdownPreview text={form.getFieldValue("Text")} />
         ) : (
           <Form
             form={form}
