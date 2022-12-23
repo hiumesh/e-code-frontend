@@ -21,7 +21,7 @@ export default function Layout({ children }: LayoutProps) {
   }, []) */
 
   return (
-    <div className="h-screen flex flex-col">
+    <div className="h-screen flex flex-col overflow-hidden bg-[#EEEEEE]">
       {!noNav.includes(router.asPath) && <Navbar />}
       {/* {noNav.includes(router.asPath) ? children : (authContext?.auth?.user ? children : null)} */}
       {children}

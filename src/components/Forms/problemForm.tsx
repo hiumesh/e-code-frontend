@@ -13,7 +13,7 @@ interface FormData {
   TestCaseMethod: "MANUALLY" | "FILE" | null;
 }
 
-interface TabTypes {
+export interface TabTypes {
   key: string;
   label: string;
   children: ReactNode;
