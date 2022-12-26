@@ -23,7 +23,7 @@ export default function ProblemTable({
   return (
     <div className="flex-1 overflow-auto">
       {pages.data.map((page) => (
-        <div className="bg-white rounded-lg shadow-1 hover:shadow-xl md:flex my-3 mx-2">
+        <div key={page.Id} className="bg-white rounded-lg shadow-1 hover:shadow-xl md:flex my-3 mx-2">
           <img
             src={`${hostURl}/static/${page.CoverImage}`}
             alt="image"
@@ -39,7 +39,7 @@ export default function ProblemTable({
                 </a>
                 <p>
                   {page.BTags.map((tag) => (
-                    <Tag className="text-base">{tag.Name}</Tag>
+                    <Tag key={tag.Id} className="text-base">{tag.Name}</Tag>
                   ))}
                 </p>
               </div>

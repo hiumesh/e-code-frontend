@@ -1,5 +1,5 @@
-import { Tag } from "antd";
 import MarkdownPreview from "./MarkdownPreview";
+import { Tag } from "./UI/Tag";
 
 export const getDifficultyTag = (type: string) => {
   if (type === "EASY")
@@ -24,7 +24,7 @@ export const getDifficultyTag = (type: string) => {
 
 export default function ProblemDescription() {
   return (
-    <div className="px-3 h-full overflow-auto">
+    <div className="px-5 h-full overflow-auto">
       <h3>Longest Comman Subsequence</h3>
       <div className="flex items-center">
         {getDifficultyTag("EASY")}
@@ -80,10 +80,10 @@ export default function ProblemDescription() {
         </button>
       </div>
       <div className="flex item-center my-2">
-        <Tag color="default">Apple</Tag>
-        <Tag color="default">Goggle</Tag>
-        <Tag color="default">Amazon</Tag>
-        <Tag color="default">Microsoft</Tag>
+        <Tag>Apple</Tag>
+        <Tag>Goggle</Tag>
+        <Tag>Amazon</Tag>
+        <Tag>Microsoft</Tag>
       </div>
       <MarkdownPreview
         text={
