@@ -2,13 +2,14 @@ import { ReactNode } from "react"
 
 interface TagPropTypes {
   children: ReactNode,
-  color?: "red" | "grey" | "green",
+  color?: "red" | "grey" | "green" | "colorless",
   size?: "small" | "medium" | "large"
   className?: string
 }
-const getTagColor = (color: "red" | "grey" | "green" | undefined) => {
+const getTagColor = (color: "red" | "grey" | "green" | "colorless" | undefined) => {
   if (color === "red") return "bg-red-200 hover:bg-red-300"
   else if (color === "green") return "bg-green-200 hover:bg-green-300"
+  else if (color === 'colorless') return "bg-transparent"
   else return "bg-gray-200 hover:bg-gray-300"
 }
 const getTagSize = (size: "small" | "medium" | "large" | undefined) => {
