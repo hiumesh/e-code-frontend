@@ -13,7 +13,6 @@ const MarkdownPreview = ({ text }: MarkdownPreviewPropTypes) => {
     html: string | null;
   }>({ loading: false, html: null });
 
-
   const fetchPreviewHTML = async () => {
     setPreviewHTML({ ...previewHTML, loading: true });
     axios
@@ -22,24 +21,24 @@ const MarkdownPreview = ({ text }: MarkdownPreviewPropTypes) => {
         text: text,
       })
       .then((res) => {
-        console.log(res);
         setPreviewHTML({ loading: false, html: res.data });
       })
       .catch((err) => {
-        console.log(err);
         setPreviewHTML({ ...previewHTML, loading: false });
       });
   };
 
   useEffect(() => {
-    if (typeof text === 'string' && text.length > 0) {
-      fetchPreviewHTML()
+    if (typeof text === "string" && text.length > 0) {
+      fetchPreviewHTML();
     }
-  }, [])
-  return <div className="markdown-body">
-    { previewHTML.loading && <Skeleton />}
-    {parse(previewHTML.html || "")}
-    </div>;
+  }, []);
+  return (
+    <div className="markdown-body">
+      {previewHTML.loading && <Skeleton />}
+      {parse(previewHTML.html || "")}
+    </div>
+  );
 };
 
 export default MarkdownPreview;
